@@ -49,7 +49,7 @@ class AsyncTest
     }
 
     private async Task AsyncOperations(CancellationToken cancellationToken)
-    {
+    { 
         await Task.Run(async() =>
         {
 
