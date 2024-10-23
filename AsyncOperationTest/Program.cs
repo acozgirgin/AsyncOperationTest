@@ -1,99 +1,99 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using System.Diagnostics;
-using System.Diagnostics.Metrics;
-
-
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 AsyncTest asyncTest = new();
 
-asyncTest.AsyncOperations();
-
+asyncTest.StartAsyncOperations();
 
 while (true)
 {
-    Console.WriteLine("Enter a value to finish async loop");
+    Console.WriteLine("Press 'a' to cancel, 'b' to restart the async loop.");
     var value = Console.ReadKey();
 
     if (value.KeyChar == 'a')
     {
-        if (asyncTest.cts is not null)
-        {
-            asyncTest.cts.Cancel();
-        }
+        asyncTest.CancelAsyncOperations();
     }
 
     if (value.KeyChar == 'b')
     {
-        asyncTest.cts = new CancellationTokenSource();
-        asyncTest.AsyncOperations();
+        asyncTest.RestartAsyncOperations();
     }
-
-
 }
 
 class AsyncTest
 {
     public CancellationTokenSource cts = new();
+    private readonly Random rnd = new();
 
-    public async Task AsyncOperations()
+    public void StartAsyncOperations()
     {
+        cts = new CancellationTokenSource();
+        AsyncOperations(cts.Token);
+    }
 
-        try
+    public void CancelAsyncOperations()
+    {
+        if (cts is not null)
         {
-            Task.Run(async() =>
+            cts.Cancel();
+            Console.WriteLine(DateTime.Now + " Async operations cancellation requested.");
+        }
+    }
+
+    public void RestartAsyncOperations()
+    {
+        CancelAsyncOperations();
+        StartAsyncOperations();
+    }
+
+    private async Task AsyncOperations(CancellationToken cancellationToken)
+    {
+        Task.Run(async() =>
+        {
+
+            try
             {
-
-                while (!cts.Token.IsCancellationRequested)
+                while (!cancellationToken.IsCancellationRequested)
                 {
+                    var terminalReadingTask = AsyncOperation1(cancellationToken);
+                    var iff45TsReadingTask = AsyncOperation2(cancellationToken);
 
-                    var TerminalReadingTask = AsyncOperation1();
+                    await Task.WhenAll(terminalReadingTask, iff45TsReadingTask);
 
-                    var IFF45TsReadingTask = AsyncOperation2();
-
-                    await Task.WhenAll(TerminalReadingTask, IFF45TsReadingTask);
-
-                    double error = IFF45TsReadingTask.Result - TerminalReadingTask.Result;
-
-                    Console.WriteLine($"Error: {error}" );
+                    double error = iff45TsReadingTask.Result - terminalReadingTask.Result;
+                    Console.WriteLine($"Error: {error}");
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine(DateTime.Now + " Async operation cancelled!");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+            }
 
 
-            } ,cts.Token);
-
-
-        }
-
-        catch (Exception ex)
-        {
-
-
-        }
-
+        });
     }
 
-
-    public async Task<double> AsyncOperation1()
+    public async Task<double> AsyncOperation1(CancellationToken cancellationToken)
     {
-
-        Random rnd = new();
-        Console.WriteLine(DateTime.Now + "  Async Operation-1 Started !!!");
-        await Task.Delay(1000);
-
+        Console.WriteLine(DateTime.Now + " Async Operation-1 Started.");
+        await Task.Delay(1000, cancellationToken);
         var rndNumber = rnd.NextDouble();
-        Console.WriteLine(DateTime.Now + "  Async Operation-1 Finished generated number: "  + rndNumber);
+        Console.WriteLine(DateTime.Now + " Async Operation-1 Finished, generated number: " + rndNumber);
         return rndNumber;
     }
 
-    public async Task<double> AsyncOperation2()
+    public async Task<double> AsyncOperation2(CancellationToken cancellationToken)
     {
-        Random rnd = new();
-        Console.WriteLine(DateTime.Now + "  Async Operation-2 Started !!!");
-        await Task.Delay(3000);
-
+        Console.WriteLine(DateTime.Now + " Async Operation-2 Started.");
+        await Task.Delay(3000, cancellationToken);
         var rndNumber = rnd.NextDouble();
-        Console.WriteLine(DateTime.Now + "  Async Operation-2 Finished generated number: " + rndNumber);
+        Console.WriteLine(DateTime.Now + " Async Operation-2 Finished, generated number: " + rndNumber);
         return rndNumber;
     }
-
 }
