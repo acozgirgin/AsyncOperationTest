@@ -34,14 +34,14 @@ while (true)
 
 class AsyncTest
 {
-    public CancellationTokenSource cts = new CancellationTokenSource();
+    public CancellationTokenSource cts = new();
 
     public async Task AsyncOperations()
     {
 
         try
         {
-            Task.Run(async () =>
+            Task.Run(async() =>
             {
 
                 while (!cts.Token.IsCancellationRequested)
@@ -53,6 +53,9 @@ class AsyncTest
 
                     await Task.WhenAll(TerminalReadingTask, IFF45TsReadingTask);
 
+                    double error = IFF45TsReadingTask.Result - TerminalReadingTask.Result;
+
+                    Console.WriteLine($"Error: {error}" );
                 }
 
 
@@ -70,20 +73,27 @@ class AsyncTest
     }
 
 
-    public async Task<string> AsyncOperation1()
+    public async Task<double> AsyncOperation1()
     {
+
+        Random rnd = new();
         Console.WriteLine(DateTime.Now + "  Async Operation-1 Started !!!");
         await Task.Delay(1000);
-        Console.WriteLine(DateTime.Now + "  Async Operation-1 Finished");
-        return "Async Operation 1 Result : AAAAAAAAAAAA";
+
+        var rndNumber = rnd.NextDouble();
+        Console.WriteLine(DateTime.Now + "  Async Operation-1 Finished generated number: "  + rndNumber);
+        return rndNumber;
     }
 
-    public async Task<string> AsyncOperation2()
+    public async Task<double> AsyncOperation2()
     {
+        Random rnd = new();
         Console.WriteLine(DateTime.Now + "  Async Operation-2 Started !!!");
         await Task.Delay(3000);
-        Console.WriteLine(DateTime.Now + "  Async Operation-2 Finished");
-        return "Async Operation 2 Result : BBBBBBBBBBBBB";
+
+        var rndNumber = rnd.NextDouble();
+        Console.WriteLine(DateTime.Now + "  Async Operation-2 Finished generated number: " + rndNumber);
+        return rndNumber;
     }
 
 }
